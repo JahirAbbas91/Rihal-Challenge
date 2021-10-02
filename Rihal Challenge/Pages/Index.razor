@@ -1,0 +1,134 @@
+﻿@page "/index"
+@page "/"
+
+@using Rihal_Challenge.Data;
+@using Rihal_Challenge.Services;
+@inherits OwningComponentBase<DataService>;
+@inject IDialogService Dialog;
+@inject ISnackbar Snackbar;
+
+@code{
+    public System.Collections.Generic.IList<CountriesClass> _cn;
+    public System.Collections.Generic.IList<ClassesClass> _cl;
+    string AverageAge = "0.0";
+    protected override void OnInitialized()
+    {
+        if (Service.TestConnection())
+        {
+            _cn = Service.StudentGroupByCountry();
+            _cl = Service.StudentGroupByClass();
+            AverageAge = Service.StudentsAverageAge();
+        }
+        else
+        {
+            Snackbar.Add("No database connection. Check the connection string in appsettings.json." , Severity.Error);
+        }
+
+    }
+}
+<MudContainer>
+    <MudGrid>
+        <MudItem md="12">
+            <MudCard Class="justify-content-center">
+                <MudCardHeader>
+
+                    <CardHeaderContent>
+
+                        <MudText Typo="Typo.body1" Style="text-align:center">Average age of students in (Years) . (Months) => @AverageAge</MudText>
+                    </CardHeaderContent>
+
+                </MudCardHeader>
+
+            </MudCard>
+
+        </MudItem>
+        <MudItem md="6">
+            <MudTable Items="@_cn" Dense="true" Hover="true" Bordered="true" Striped="true" Filter="new Func<CountriesClass, bool>(FilterFuncGrpCountry1)">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Student Statistics By Country</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchStringGrpCountry1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh Style="width:70%"><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<CountriesClass, object>(x => x.Name)">Country</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<CountriesClass, object>(x => x.Count)">Students Count</MudTableSortLabel></MudTh>
+
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Id">@context.Name</MudTd>
+                    <MudTd DataLabel="Country Name">@context.Count</MudTd>
+
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudItem>
+        <MudItem md="6">
+            <MudTable Items="@_cl" Dense="true" Hover="true" Bordered="true" Striped="true" Filter="new Func<ClassesClass, bool>(FilterFuncGrpClass1)">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Student Statistics By Class</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchStringGrpClass1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh Style="width:70%"><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ClassesClass, object>(x => x.ClassName)">Class</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ClassesClass, object>(x => x.Count)">Students Count</MudTableSortLabel></MudTh>
+
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Id">@context.ClassName</MudTd>
+                    <MudTd DataLabel="Country Name">@context.Count</MudTd>
+
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+
+@code {
+
+    private string searchStringGrpCountry1 = "";
+    private string searchStringGrpClass1 = "";
+
+
+    private bool FilterFuncGrpCountry1(CountriesClass element) => FilterFuncGrpCountry(element, searchStringGrpCountry1);
+
+
+    private bool FilterFuncGrpCountry(CountriesClass element, string searchStringGrpCountry)
+    {
+        if (string.IsNullOrWhiteSpace(searchStringGrpCountry))
+            return true;
+        if (element.Count.ToString().Contains(searchStringGrpCountry, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Name.Contains(searchStringGrpCountry, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+
+
+
+
+
+    private bool FilterFuncGrpClass1(ClassesClass element) => FilterFuncGrpClass(element, searchStringGrpClass1);
+
+
+    private bool FilterFuncGrpClass(ClassesClass element, string searchStringGrpClass)
+    {
+        if (string.IsNullOrWhiteSpace(searchStringGrpClass))
+            return true;
+        if (element.Count.ToString().Contains(searchStringGrpClass, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.ClassName.Contains(searchStringGrpClass, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+}
+

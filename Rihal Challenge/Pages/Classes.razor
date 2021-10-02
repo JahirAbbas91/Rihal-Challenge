@@ -1,0 +1,231 @@
+﻿@page "/classdata"
+@using Rihal_Challenge.Data;
+@using Rihal_Challenge.Services;
+@inherits OwningComponentBase<DataService>;
+@inject IDialogService Dialog;
+@inject ISnackbar Snackbar;
+
+<MudContainer>
+
+    <MudButton Size="Size.Small" Variant="Variant.Filled" OnClick="@((e) => AddDialog())" Color="Color.Primary"><MudIcon Icon="@Icons.Material.Filled.Add"></MudIcon> Add</MudButton>
+
+
+
+    <MudTable Items="@_cl" Dense="true" Hover="true" Bordered="true" Striped="true" Filter="new Func<ClassesClass,bool>(FilterFunc1)">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Classes</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ClassesClass, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<ClassesClass, object>(x=>x.ClassName)">Class</MudTableSortLabel></MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Id">@context.Id</MudTd>
+            <MudTd DataLabel="Class Name">@context.ClassName</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudButton Variant="Variant.Filled" @onclick="(()=>EditDialog(context))" Color="Color.Primary" Size="Size.Small"><MudIcon Size="Size.Small" Icon="@Icons.Material.Filled.Edit"></MudIcon> Edit</MudButton>
+                <MudButton Variant="Variant.Filled" @onclick="(()=>ShowDeleteConfirm(context))" Color="Color.Error" Size="Size.Small"><MudIcon Size="Size.Small" Icon="@Icons.Material.Filled.Delete"></MudIcon> Delete</MudButton>
+
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+    <MudDialog @bind-IsVisible="modal_visible">
+        <DialogContent>
+            <h3>@modal_header</h3>
+            <hr />
+            <br />
+            <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                <MudGrid>
+                    <MudItem md="12">
+                        <MudTextField @bind-Value="@element_class.ClassName" Label="Name" Required="true" RequiredError="Enter the Class Name" />
+                    </MudItem>
+                   
+                    
+
+
+
+
+                </MudGrid>
+            </MudForm>
+        </DialogContent>
+
+        <DialogActions>
+            <MudButton Variant="Variant.Filled" OnClick="Close" Color="Color.Default"><MudIcon Icon="@Icons.Material.Filled.Close"></MudIcon> Close</MudButton>
+            <MudButton Variant="Variant.Filled" OnClick="@(async () => await SaveClass())" Color="Color.Primary"><MudIcon Icon="@Icons.Material.Filled.Save"></MudIcon> Save</MudButton>
+        </DialogActions>
+    </MudDialog>
+
+    <MudMessageBox @ref="mbox" Title="Warning" CancelText="Cancel">
+        <MessageContent>
+            Are you sure to delete this record?
+        </MessageContent>
+        <YesButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Check">Yes</MudButton>
+        </YesButton>
+    </MudMessageBox>
+
+</MudContainer>
+@code {
+    public System.Collections.Generic.IList<ClassesClass> _cl;
+    protected override void OnInitialized()
+    {
+        if (Service.TestConnection())
+        {
+            _cl = Service.DisplayClasses();
+        }
+        else
+        {
+            Snackbar.Add("No database connection. Check the connection string in appsettings.json.", Severity.Error);
+        }
+
+    }
+}
+@code {
+
+    //Modal Form Validation Start
+
+    bool success;
+    string[] errors = { };
+    MudForm form;
+
+
+    //Modal Form Validation End
+
+    //Modal Dialog Intialize Start
+    ClassesClass element_class = new ClassesClass();
+
+
+
+
+    private bool modal_visible;
+    public string modal_header;
+    DialogService dialogService = new DialogService();
+
+    private void AddDialog()
+    {
+
+        element_class.Id = 0;
+        element_class.ClassName = "";
+        modal_visible = true; modal_header = "Add Class";
+    }
+    private void EditDialog(ClassesClass objclass)
+    {
+
+        element_class = objclass;
+        modal_visible = true; modal_header = "Edit Class";
+
+    }
+    void Close()
+    {
+        _cl = Service.DisplayClasses();
+
+        modal_visible = false;
+    }
+
+
+    private async Task SaveClass()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+
+            if (element_class.Id == 0)
+            {
+                element_class.CreatedDate = DateTime.Now;
+                element_class.ModifiedDate = DateTime.Now;
+                if (Service.InsertClass(element_class))
+                {
+                    Close();
+                    Snackbar.Add("Record Saved Successfully", Severity.Success);
+                }
+                else
+                {
+                    Close();
+                    Snackbar.Add("Class name already exsist", Severity.Error);
+                }
+            }
+            else
+            {
+                element_class.ModifiedDate = DateTime.Now;
+                if (Service.UpdateClass(element_class))
+                {
+                    Close();
+                    Snackbar.Add("Record Updated Successfully", Severity.Success);
+                }
+                else
+                {
+                    Close();
+                    Snackbar.Add("Error in Record Updation", Severity.Error);
+                }
+            }
+        }
+
+
+    }
+    //Modal Dialog Intialize End
+
+
+
+    //Delete Alert Intialize Start
+
+    MudMessageBox mbox { get; set; }
+    string state = "";
+
+    private async void ShowDeleteConfirm(ClassesClass objclass)
+    {
+        bool? result = await mbox.Show();
+        state = result == null ? "Cancelled" : "Deleted!";
+        StateHasChanged();
+        if (result == true)
+        {
+            if (Service.DeleteClass(objclass))
+            {
+                _cl.Clear();
+                _cl = Service.DisplayClasses();
+                Snackbar.Add("Record Deleted Successfully", Severity.Success);
+            }
+            else
+            {
+
+                Snackbar.Add("Can't delete this class, because this class have some students records", Severity.Error);
+            }
+        }
+        //
+    }
+
+
+
+}
+@code {
+
+    //Datatable Intialize Start
+    private string searchString1 = "";
+
+
+
+    private bool FilterFunc1(ClassesClass element) => FilterFunc(element, searchString1);
+
+
+    private bool FilterFunc(ClassesClass element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Id.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.ClassName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+    //Datatable Intialize End
+}
+
+
+
