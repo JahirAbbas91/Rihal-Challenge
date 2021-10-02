@@ -1,0 +1,33 @@
+﻿
+
+CREATE TABLE countries (
+	id serial PRIMARY KEY,
+	name VARCHAR ( 100 ) NOT NULL,
+	created_date date NOT NULL,
+    modified_date date  NOT NULL 
+	
+);
+
+
+CREATE TABLE classes (
+	id serial PRIMARY KEY,
+	class_name VARCHAR ( 100 ) NOT NULL,
+	created_date date NOT NULL,
+    modified_date date  NOT NULL	
+);
+
+
+CREATE TABLE students (
+	id serial PRIMARY KEY,
+	class_id int not null,
+	country_id int not null,
+	name VARCHAR ( 100 ) NOT NULL,
+date_of_birth date not null,
+	created_date date NOT NULL,
+        modified_date date  NOT NULL, 
+	
+  FOREIGN KEY (country_id)
+      REFERENCES countries (id),
+  FOREIGN KEY (class_id)
+      REFERENCES classes (id)
+);
